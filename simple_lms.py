@@ -24,6 +24,16 @@ class Student:
             return []
         return [course.course_name for course in self.enrolled_courses]
     
+    def drop_course(self, course):
+        """Unenroll student from a course"""
+        if course in self.enrolled_courses:
+            self.enrolled_courses.remove(course)
+            print(f"{self.name} dropped {course.course_name}")
+            if self in course.students:
+                course.students.remove(self)
+        else:
+            print(f"{self.name} is not enrolled in {course.course_name}")
+    
     def __repr__(self):
         return self.name
 

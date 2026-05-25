@@ -1,7 +1,30 @@
 # Simple Learning Management System (LMS)
-# Core classes: Student, Course, Teacher, Assignment
+# Core classes: Student, Course, Teacher, Assignment + Grades
 
 from datetime import date
+
+
+# ---------------------------------------------------------------------------
+# Grade Utilities
+# ---------------------------------------------------------------------------
+
+def calculate_letter_grade(percentage: float) -> str:
+    """Convert a percentage score to a letter grade."""
+    if percentage >= 90:
+        return "A"
+    elif percentage >= 80:
+        return "B"
+    elif percentage >= 70:
+        return "C"
+    elif percentage >= 60:
+        return "D"
+    else:
+        return "F"
+
+
+def letter_to_gpa(letter: str) -> float:
+    """Convert a letter grade to a 4.0 GPA point value."""
+    return {"A": 4.0, "B": 3.0, "C": 2.0, "D": 1.0, "F": 0.0}.get(letter, 0.0)
 
 
 class Assignment:
@@ -31,7 +54,18 @@ class Assignment:
             print(f"Score {score} exceeds max points ({self.max_points}).")
             return
         self.submissions[student.student_id]["score"] = score
-        print(f"{student.name} scored {score}/{self.max_points} on '{self.title}'.")
+        pct = (score / self.max_points) * 100
+        letter = calculate_letter_grade(pct)
+        print(f"{student.name} scored {score}/{self.max_points} ({pct:.1f}% — {letter}) on '{self.title}'.")
+
+    def get_student_grade(self, student_id):
+        """Return (score, percentage, letter) for a student, or None if ungraded."""
+        sub = self.submissions.get(student_id)
+        if sub is None or sub["score"] is None:
+            return None
+        score = sub["score"]
+        pct = (score / self.max_points) * 100
+        return score, pct, calculate_letter_grade(pct)
 
     def view_submissions(self):
         """Return a summary of all submissions."""
@@ -96,18 +130,29 @@ class Student:
         return assignments
 
     def view_my_grades(self, course):
-        """View personal scores for all graded assignments in a course."""
+        """View personal scores, percentages, and letter grades for a course."""
         print(f"\n--- {self.name}'s Grades in {course.course_name} ---")
+        graded_pcts = []
         found = False
         for assignment in course.assignments:
-            submission = assignment.submissions.get(self.student_id)
-            if submission:
-                score = submission["score"]
-                score_str = f"{score}/{assignment.max_points}" if score is not None else "Not graded"
-                print(f"  {assignment.title}: {score_str}")
+            result = assignment.get_student_grade(self.student_id)
+            if result:
+                score, pct, letter = result
+                print(f"  {assignment.title}: {score}/{assignment.max_points} ({pct:.1f}% — {letter})")
+                graded_pcts.append(pct)
                 found = True
+            else:
+                sub = assignment.submissions.get(self.student_id)
+                if sub:
+                    print(f"  {assignment.title}: Submitted — Not graded yet")
+                    found = True
         if not found:
             print("  No submissions found.")
+        if graded_pcts:
+            avg = sum(graded_pcts) / len(graded_pcts)
+            overall_letter = calculate_letter_grade(avg)
+            print(f"  ─────────────────────────────────")
+            print(f"  Course Average: {avg:.1f}% — {overall_letter}")
 
     def __repr__(self):
         return self.name

@@ -19,7 +19,7 @@ def calculate_letter_grade(percentage: float) -> str:
     elif percentage >= 60:
         return "D"
     elif percentage >= 50:
-        return "C"
+        return "E"
     else:
         return "F"
 
